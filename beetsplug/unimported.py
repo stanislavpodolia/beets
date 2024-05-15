@@ -18,6 +18,7 @@ List all files in the library folder which are not listed in the
 """
 
 import os
+import re
 
 from beets import util
 from beets.plugins import BeetsPlugin
@@ -58,8 +59,13 @@ class Unimported(BeetsPlugin):
             }
             in_library = {x.path for x in lib.items()}
             art_files = {x.artpath for x in lib.albums()}
+            paths = set()
             for f in in_folder - in_library - art_files:
-                print_(util.displayable_path(f))
+                paths.add(re.sub('\\\\[^\\\\]*\\Z', '', util.displayable_path(f)))
+            paths = list(paths)
+            paths.sort()
+            for p in paths:
+                print_(p)
 
         unimported = Subcommand(
             'unimported',

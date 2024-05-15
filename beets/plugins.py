@@ -21,6 +21,8 @@ import inspect
 import abc
 from collections import defaultdict
 from functools import wraps
+import queue
+import threading
 
 
 import beets
@@ -376,38 +378,118 @@ def album_distance(items, album_info, mapping):
         dist.update(plugin.album_distance(items, album_info, mapping))
     return dist
 
+class candidates_thread(threading.Thread):
+    def __init__(self, result, plugin, items, artist, album, va_likely, extra_tags=None):
+        threading.Thread.__init__(self)
+        self.result = result
+        self.plugin = plugin
+        self.items = items
+        self.artist = artist
+        self.album = album
+        self.va_likely = va_likely
+        self.extra_tags = extra_tags
+    def run(self):
+        candidates = self.plugin.candidates(self.items, self.artist, self.album, self.va_likely, self.extra_tags)
+        self.result.extend(candidates)
 
 def candidates(items, artist, album, va_likely, extra_tags=None):
     """Gets MusicBrainz candidates for an album from each plugin.
     """
-    for plugin in find_plugins():
-        yield from plugin.candidates(items, artist, album, va_likely,
-                                     extra_tags)
+    result = []
+    threads = []
 
+    for plugin in find_plugins():
+        t = candidates_thread(result, plugin, items, artist, album, va_likely, extra_tags)
+        t.start()
+        threads.append(t)
+
+    for t in threads:
+        t.join()
+
+    return result
+
+class item_candidates_thread(threading.Thread):
+    def __init__(self, result, plugin, item, artist, title):
+        threading.Thread.__init__(self)
+        self.result = result
+        self.plugin = plugin
+        self.item = item
+        self.artist = artist
+        self.title = title
+    def run(self):
+        candidates = self.plugin.item_candidates(self.item, self.artist, self.title)
+        self.result.extend(candidates)
 
 def item_candidates(item, artist, title):
     """Gets MusicBrainz candidates for an item from the plugins.
     """
+    result = []
+    threads = []
+
     for plugin in find_plugins():
-        yield from plugin.item_candidates(item, artist, title)
+        t = item_candidates_thread(result, plugin, item, artist, title)
+        t.start()
+        threads.append(t)
+
+    for t in threads:
+        t.join()
+
+    return result
+
+class album_for_id_thread(threading.Thread):
+    def __init__(self, result, plugin, album_id):
+        threading.Thread.__init__(self)
+        self.result = result
+        self.plugin = plugin
+        self.album_id = album_id
+    def run(self):
+        album = self.plugin.album_for_id(self.album_id)
+        if album:
+            self.result.append(album)
 
 
 def album_for_id(album_id):
     """Get AlbumInfo objects for a given ID string.
     """
+    result = []
+    threads = []
+
     for plugin in find_plugins():
-        album = plugin.album_for_id(album_id)
-        if album:
-            yield album
+        t = album_for_id_thread(result, plugin, album_id)
+        t.start()
+        threads.append(t)
+
+    for t in threads:
+        t.join()
+
+    return result
+
+class track_for_id_thread(threading.Thread):
+    def __init__(self, result, plugin, track_id):
+        threading.Thread.__init__(self)
+        self.result = result
+        self.plugin = plugin
+        self.track_id = track_id
+    def run(self):
+        track = self.plugin.track_for_id(self.track_id)
+        self.result.extend(track)
 
 
 def track_for_id(track_id):
     """Get TrackInfo objects for a given ID string.
     """
+    result = []
+    threads = []
+
     for plugin in find_plugins():
-        track = plugin.track_for_id(track_id)
-        if track:
-            yield track
+        t = track_for_id_thread(result, plugin, track_id)
+        t.start()
+        threads.append(t)
+
+    for t in threads:
+        t.join()
+
+    return result
 
 
 def template_funcs():

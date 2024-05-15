@@ -137,7 +137,7 @@ class AcousticPlugin(plugins.BeetsPlugin):
     def __init__(self):
         super().__init__()
 
-        self._log.warning("This plugin is deprecated.")
+        # self._log.warning("This plugin is deprecated.")
 
         self.config.add({
             'auto': True,
@@ -337,8 +337,8 @@ class AcousticPlugin(plugins.BeetsPlugin):
                 else:
                     yield v, subdata[k]
             else:
-                self._log.warning('Acousticbrainz did not provide info '
-                                  'about {}', k)
+                # self._log.warning('Acousticbrainz did not provide info '
+                #                   'about {}', k)
                 self._log.debug('Data {} could not be mapped to scheme {} '
                                 'because key {} was not found', subdata, v, k)
 

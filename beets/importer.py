@@ -575,9 +575,9 @@ class ImportTask(BaseImportTask):
             if lib.directory in util.ancestry(item.path):
                 log.debug('deleting duplicate {0}',
                           util.displayable_path(item.path))
-                util.remove(item.path)
-                util.prune_dirs(os.path.dirname(item.path),
-                                lib.directory)
+                # util.remove(item.path)
+                # util.prune_dirs(os.path.dirname(item.path),
+                #                 lib.directory)
 
     def set_fields(self, lib):
         """Sets the fields given at CLI or configuration to the specified
@@ -698,7 +698,7 @@ class ImportTask(BaseImportTask):
             # i.e. album is being completely re-imported by the task,
             # in which case it is not a duplicate (will be replaced).
             album_paths = {i.path for i in album.items()}
-            if not (album_paths <= task_paths):
+            if len(list(filter(lambda item: len(list(filter(lambda item2: os.path.samefile(item, item2), task_paths))) == 0, album_paths))) > 0:
                 duplicates.append(album)
 
         return duplicates
@@ -1193,6 +1193,12 @@ class ImportTaskFactory:
             if not archive_task:
                 return
 
+        print('loading_items')
+        items = {}
+        for item in list(self.session.lib.items()):
+            items[item.path.lower()] = item
+        print('loaded_items', len(items))
+
         # Search for music in the directory.
         for dirs, paths in self.paths():
             if self.session.config['singletons']:
@@ -1202,7 +1208,7 @@ class ImportTaskFactory:
                 yield self.sentinel(dirs)
 
             else:
-                tasks = self._create(self.album(paths, dirs))
+                tasks = self._create(self.album(paths, items, dirs))
                 yield from tasks
 
         # Produce the final sentinel for this toppath to indicate that
@@ -1262,7 +1268,7 @@ class ImportTaskFactory:
         else:
             return None
 
-    def album(self, paths, dirs=None):
+    def album(self, paths, items, dirs=None):
         """Return a `ImportTask` with all media files from paths.
 
         `dirs` is a list of parent directories used to record already
@@ -1274,13 +1280,18 @@ class ImportTaskFactory:
         if dirs is None:
             dirs = list({os.path.dirname(p) for p in paths})
 
-        if self.session.already_imported(self.toppath, dirs):
+        # print('album', paths[0])
+
+        has_new_paths = next((path for path in paths if not path.decode("utf-8").endswith('.jpg') and not path.decode("utf-8").endswith('.png') and
+            not path.lower() in items), None)
+
+        if self.session.already_imported(self.toppath, dirs) or not has_new_paths:
             log.debug('Skipping previously-imported path: {0}',
                       displayable_path(dirs))
             self.skipped += 1
             return None
 
-        items = map(self.read_item, paths)
+        items = map(self.read_item, paths if has_new_paths else [])
         items = [item for item in items if item]
 
         if items:
@@ -1486,6 +1497,11 @@ def user_query(session, task):
         # Create a new task for tagging the current items
         # and duplicates together
         duplicate_items = task.duplicate_items(session.lib)
+
+        def filter_items(item, item2):
+            return os.path.samefile(item.path, item2.path)
+
+        duplicate_items = list(filter(lambda item: len(list(filter(lambda item2: filter_items(item, item2), task.items))) == 0, duplicate_items))
 
         # Duplicates would be reimported so make them look "fresh"
         _freshen_items(duplicate_items)

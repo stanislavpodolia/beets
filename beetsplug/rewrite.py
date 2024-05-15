@@ -30,11 +30,17 @@ def rewriter(field, rules):
     (pattern, replacement) pairs.
     """
     def fieldfunc(item):
+        replacements = {}
+        for key, value in item._values_fixed.items():
+            replacements[key] = value
         value = item._values_fixed[field]
         for pattern, replacement in rules:
             if pattern.match(value.lower()):
                 # Rewrite activated.
-                return replacement
+                try:
+                    return replacement.format(**replacements)
+                except:
+                    return replacement
         # Not activated; return original value.
         return value
     return fieldfunc

@@ -32,6 +32,7 @@ from urllib.parse import urljoin
 from beets.util.id_extractors import extract_discogs_id_regex, \
     spotify_id_regex, deezer_id_regex, beatport_id_regex
 from beets.plugins import MetadataSourcePlugin
+import json
 
 VARIOUS_ARTISTS_ID = '89ad4ac3-39f7-470e-963a-56509c546377'
 
@@ -444,6 +445,8 @@ def album_info(release: Dict) -> beets.autotag.hooks.AlbumInfo:
     info.asin = release.get('asin')
     info.releasegroup_id = release['release-group']['id']
     info.albumstatus = release.get('status')
+    if info.albumstatus:
+        info.albumstatus = info.albumstatus.lower()
 
     # Get the disambiguation strings at the release and release group level.
     if release['release-group'].get('disambiguation'):
@@ -482,11 +485,14 @@ def album_info(release: Dict) -> beets.autotag.hooks.AlbumInfo:
 
     # Label name.
     if release.get('label-info-list'):
-        label_info = release['label-info-list'][0]
-        if label_info.get('label'):
-            label = label_info['label']['name']
-            if label != '[no label]':
-                info.label = label
+        for label_info in release['label-info-list']:
+            if label_info.get('label'):
+                label = label_info['label']['name']
+                if label != '[no label]':
+                    if info.label:
+                        info.label = info.label + '/' + label
+                    else:
+                        info.label = label
         info.catalognum = label_info.get('catalog-number')
 
     # Text representation data.

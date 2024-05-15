@@ -1531,7 +1531,7 @@ class Library(dbcore.Database):
 
     # Querying.
 
-    def _fetch(self, model_cls, query, sort=None):
+    def _fetch(self, model_cls, query, sort=None, limit=None):
         """Parse a query and fetch.
 
         If an order specification is present in the query string
@@ -1553,7 +1553,7 @@ class Library(dbcore.Database):
             sort = parsed_sort
 
         return super()._fetch(
-            model_cls, query, sort
+            model_cls, query, sort, limit
         )
 
     @staticmethod
@@ -1568,13 +1568,13 @@ class Library(dbcore.Database):
         return dbcore.sort_from_strings(
             Item, beets.config['sort_item'].as_str_seq())
 
-    def albums(self, query=None, sort=None):
+    def albums(self, query=None, sort=None, limit=None):
         """Get :class:`Album` objects matching the query."""
-        return self._fetch(Album, query, sort or self.get_default_album_sort())
+        return self._fetch(Album, query, sort or self.get_default_album_sort(), limit)
 
-    def items(self, query=None, sort=None):
+    def items(self, query=None, sort=None, limit=None):
         """Get :class:`Item` objects matching the query."""
-        return self._fetch(Item, query, sort or self.get_default_item_sort())
+        return self._fetch(Item, query, sort or self.get_default_item_sort(), limit)
 
     # Convenience accessors.
 

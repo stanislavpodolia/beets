@@ -838,6 +838,20 @@ class TerminalImportSession(importer.ImportSession):
         log.warning("This {0} is already in the library!",
                     ("album" if task.is_album else "item"))
 
+
+        old_items = []
+
+        def filter_items(item, item2):
+            return os.path.samefile(item.path, item2.path)
+
+        for duplicate in found_duplicates:
+            old_items.extend(list(filter(lambda item: len(list(filter(lambda item2: filter_items(item, item2), task.imported_items()))) == 0, duplicate.items())))
+
+        print('old_items', len(old_items))
+
+        # if len(old_items) == 0:
+        #     sel = 'm'
+        # el
         if config['import']['quiet']:
             # In quiet mode, don't prompt -- just skip.
             log.info('Skipping.')
