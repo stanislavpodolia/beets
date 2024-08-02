@@ -61,7 +61,8 @@ class Unimported(BeetsPlugin):
             art_files = {x.artpath for x in lib.albums()}
             paths = set()
             for f in in_folder - in_library - art_files:
-                paths.add(re.sub('\\\\[^\\\\]*\\Z', '', util.displayable_path(f)))
+                paths.add(util.displayable_path(f))
+                # paths.add(re.sub('\\\\[^\\\\]*\\Z', '', util.displayable_path(f)))
             paths = list(paths)
             paths.sort()
             for p in paths:

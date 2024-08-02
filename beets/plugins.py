@@ -779,7 +779,7 @@ class MetadataSourcePlugin(metaclass=abc.ABCMeta):
             name = re.sub(r'^(.*?), (a|an|the)$', r'\2 \1', name, flags=re.I)
             # Use a join keyword if requested and available.
             if idx < (total - 1):  # Skip joining on last.
-                if join_key and artist.get(join_key, None):
+                if join_key and artist.get(join_key, None) and artist.get(join_key, None) != ',':
                     name += f" {artist[join_key]} "
                 else:
                     name += ', '

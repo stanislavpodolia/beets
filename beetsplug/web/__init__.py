@@ -28,6 +28,7 @@ import base64
 
 
 # Utilities.
+limit=100
 
 def _rep(obj, expand=False):
     """Get a flat -- i.e., JSON-ish -- representation of a beets Item or
@@ -294,7 +295,7 @@ def get_item(id):
 @app.route('/item/query/')
 @resource_list('items')
 def all_items():
-    return g.lib.items()
+    return g.lib.items(None, None, limit)
 
 
 @app.route('/item/<int:item_id>/file')
@@ -339,13 +340,13 @@ def item_file(item_id):
 @app.route('/item/query/<query:queries>', methods=["GET", "DELETE", "PATCH"])
 @resource_query('items', patchable=True)
 def item_query(queries):
-    return g.lib.items(queries)
+    return g.lib.items(queries, None, limit)
 
 
 @app.route('/item/path/<everything:path>')
 def item_at_path(path):
     query = beets.library.PathQuery('path', path.encode('utf-8'))
-    item = g.lib.items(query).get()
+    item = g.lib.items(query, None, limit).get()
     if item:
         return flask.jsonify(_rep(item))
     else:
@@ -375,13 +376,13 @@ def get_album(id):
 @app.route('/album/query/')
 @resource_list('albums')
 def all_albums():
-    return g.lib.albums()
+    return g.lib.albums(None, None, limit)
 
 
 @app.route('/album/query/<query:queries>', methods=["GET", "DELETE"])
 @resource_query('albums')
 def album_query(queries):
-    return g.lib.albums(queries)
+    return g.lib.albums(queries, None, limit)
 
 
 @app.route('/album/<int:album_id>/art')

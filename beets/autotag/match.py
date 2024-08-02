@@ -152,6 +152,9 @@ def track_distance(
     """
     dist = hooks.Distance()
 
+    if not track_info:
+        return dist
+
     # Length.
     if track_info.length:
         item_length = cast(float, item.length)

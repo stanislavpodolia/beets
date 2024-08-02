@@ -39,6 +39,7 @@ from beets.util import pipeline, sorted_walk, ancestry, MoveOperation
 from beets.util import syspath, normpath, displayable_path
 from enum import Enum
 import mediafile
+import random
 
 action = Enum('action',
               ['SKIP', 'ASIS', 'TRACKS', 'APPLY', 'ALBUMS', 'RETAG'])
@@ -1200,7 +1201,7 @@ class ImportTaskFactory:
         print('loaded_items', len(items))
 
         # Search for music in the directory.
-        for dirs, paths in self.paths():
+        for dirs, paths in sorted(self.paths(), key=lambda k: -os.path.getmtime(k[0][0])):
             if self.session.config['singletons']:
                 for path in paths:
                     tasks = self._create(self.singleton(path))

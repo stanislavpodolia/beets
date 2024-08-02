@@ -138,7 +138,8 @@ class BandcampPlugin(plugins.BeetsPlugin):
             metadata = json.loads(html.find('script', attrs={'type': 'application/ld+json'}).text.strip())
             if 'bandcamp' not in html.find('script', attrs={'type': 'application/ld+json'}).text.strip():
                 return None
-            album = metadata['name']
+            artist = metadata['byArtist']['name']
+            album = metadata['name'].replace(artist + ' - ', '').replace(artist + ' — ', '').strip()
             label = None
             if 'publisher' in metadata:
                 label = metadata['publisher']['name']
@@ -146,14 +147,13 @@ class BandcampPlugin(plugins.BeetsPlugin):
             # visible on the page and you can't search by the id, so we need to use
             # the url as id.
             album_id = url
-            artist = metadata['byArtist']['name']
             release = metadata['datePublished']
             release = parse(release)
             artist_url = url.split('/album/')[0]
             tracks = []
             if 'track' in metadata and 'itemListElement' in metadata['track']:
                 for itemListElement in metadata['track']['itemListElement']:
-                    track = self._parse_album_track(itemListElement)
+                    track = self._parse_album_track(itemListElement, artist)
                     tracks.append(track)
 
             return AlbumInfo(tracks, album, album_id, artist, artist_url,
@@ -282,7 +282,7 @@ class BandcampPlugin(plugins.BeetsPlugin):
         r.raise_for_status()
         return BeautifulSoup(r.text, 'html.parser')
 
-    def _parse_album_track(self, itemListElement):
+    def _parse_album_track(self, itemListElement, artist):
         """Returns a TrackInfo derived from the html describing a track in a
         bandcamp album page.
         """
@@ -290,25 +290,27 @@ class BandcampPlugin(plugins.BeetsPlugin):
         track_num = int(track_num)
 
         title = itemListElement['item']['name']
-        artist = None
         if self.config['split_artist_title']:
-            artist, title = self._split_artist_title(title)
+            artist, title = self._split_artist_title(title, artist)
         track_id = itemListElement['item']['@id']
-        try:
-            duration = itemListElement['item']['duration']
-            duration = duration.replace('P', 'PT')
-            track_length = isodate.parse_duration(duration).total_seconds()
-        except TypeError:
+        if 'duration' in itemListElement['item']:
+            try:
+                duration = itemListElement['item']['duration']
+                duration = duration.replace('P', 'PT')
+                track_length = isodate.parse_duration(duration).total_seconds()
+            except TypeError:
+                track_length = None
+        else:
             track_length = None
 
         return TrackInfo(title, track_id, index=track_num, length=track_length, artist=artist)
 
-    def _split_artist_title(self, title):
+    def _split_artist_title(self, title, artist=None):
         """Returns artist and title by splitting title on ARTIST_TITLE_DELIMITER.
         """
         parts = title.split(ARTIST_TITLE_DELIMITER)
         if len(parts) == 1:
-            return None, title
+            return artist, title
         return parts[0], ARTIST_TITLE_DELIMITER.join(parts[1:])
 
 

@@ -1093,7 +1093,7 @@ class Database:
 
     # Querying.
 
-    def _fetch(self, model_cls, query=None, sort=None, limit=None):
+    def _fetch(self, model_cls, query=None, sort=None, limit=None, select=None):
         """Fetch the objects of type `model_cls` matching the given
         query. The query may be given as a string, string sequence, a
         Query object, or None (to fetch everything). `sort` is an
@@ -1104,7 +1104,8 @@ class Database:
         where, subvals = query.clause()
         order_by = sort.order_clause()
 
-        sql = ("SELECT * FROM {} WHERE {} {} {}").format(
+        sql = ("SELECT {} FROM {} WHERE {} {} {}").format(
+            select if select else '*',
             model_cls._table,
             where or '1',
             f"ORDER BY {order_by}" if order_by else '',
@@ -1116,17 +1117,20 @@ class Database:
         # one query per item to sqlite.
         flex_sql = ("""
             SELECT * FROM {} WHERE entity_id IN
-                (SELECT id FROM {} WHERE {});
+                (SELECT id FROM {} WHERE {}) {};
             """.format(
             model_cls._flex_table,
             model_cls._table,
             where or '1',
+            'AND key IN ({})'.format(",".join(["'" + i + "'" for i in select.split(",")])) if select else '',
         )
         )
 
         with self.transaction() as tx:
             rows = tx.query(sql, subvals)
             flex_rows = tx.query(flex_sql, subvals)
+            # for row in flex_rows:
+            #     print(row[0], row[1], row[2], row[3])
 
         return Results(
             model_cls, rows, self, flex_rows,

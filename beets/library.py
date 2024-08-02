@@ -1164,7 +1164,7 @@ class Album(LibModel):
         getters['albumtotal'] = Album._albumtotal
         return getters
 
-    def items(self):
+    def items(self, sort=None, limit=None, select=None):
         """Return an iterable over the items associated with this
         album.
 
@@ -1173,7 +1173,7 @@ class Album(LibModel):
         Since :meth:`Album.items` predates these methods, and is
         likely to be used by plugins, we keep this interface as-is.
         """
-        return self._db.items(dbcore.MatchQuery('album_id', self.id))
+        return self._db.items(dbcore.MatchQuery('album_id', self.id), sort, limit, select)
 
     def remove(self, delete=False, with_items=True):
         """Remove this album and all its associated items from the
@@ -1531,7 +1531,7 @@ class Library(dbcore.Database):
 
     # Querying.
 
-    def _fetch(self, model_cls, query, sort=None, limit=None):
+    def _fetch(self, model_cls, query, sort=None, limit=None, select=None):
         """Parse a query and fetch.
 
         If an order specification is present in the query string
@@ -1553,7 +1553,7 @@ class Library(dbcore.Database):
             sort = parsed_sort
 
         return super()._fetch(
-            model_cls, query, sort, limit
+            model_cls, query, sort, limit, select
         )
 
     @staticmethod
@@ -1568,13 +1568,13 @@ class Library(dbcore.Database):
         return dbcore.sort_from_strings(
             Item, beets.config['sort_item'].as_str_seq())
 
-    def albums(self, query=None, sort=None, limit=None):
+    def albums(self, query=None, sort=None, limit=None, select=None):
         """Get :class:`Album` objects matching the query."""
-        return self._fetch(Album, query, sort or self.get_default_album_sort(), limit)
+        return self._fetch(Album, query, sort or self.get_default_album_sort(), limit, select)
 
-    def items(self, query=None, sort=None, limit=None):
+    def items(self, query=None, sort=None, limit=None, select=None):
         """Get :class:`Item` objects matching the query."""
-        return self._fetch(Item, query, sort or self.get_default_item_sort(), limit)
+        return self._fetch(Item, query, sort or self.get_default_item_sort(), limit, select)
 
     # Convenience accessors.
 

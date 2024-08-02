@@ -725,6 +725,8 @@ class Beatport4Plugin(BeetsPlugin):
     def _get_track_info(self, track):
         """Returns a TrackInfo object for a Beatport Track object.
         """
+        if not track or not track.name:
+            return None
         title = track.name
         if track.mix_name != "Original Mix":
             title += f" ({track.mix_name})"
