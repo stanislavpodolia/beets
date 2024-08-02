@@ -5,13 +5,11 @@ The ``fetchart`` plugin retrieves album art images from various sources on the
 Web and stores them as image files.
 
 To use the ``fetchart`` plugin, first enable it in your configuration (see
-:ref:`using-plugins`). Then, install the `requests`_ library by typing::
+:ref:`using-plugins`). Then, install ``beets`` with ``fetchart`` extra
 
-    pip install requests
+.. code-block:: bash
 
-The plugin uses `requests`_ to fetch album art from the Web.
-
-.. _requests: https://requests.readthedocs.io/en/master/
+    pip install "beets[fetchart]"
 
 Fetching Album Art During Import
 --------------------------------
@@ -41,7 +39,10 @@ file. The available options are:
   considered as valid album art candidates. Default: 0.
 - **maxwidth**: A maximum image width to downscale fetched images if they are
   too big. The resize operation reduces image width to at most ``maxwidth``
-  pixels. The height is recomputed so that the aspect ratio is preserved.
+  pixels. The height is recomputed so that the aspect ratio is preserved. See
+  the section on :ref:`cover-art-archive-maxwidth` below for additional
+  information regarding the Cover Art Archive source.
+  Default: 0 (no maximum is enforced).
 - **quality**: The JPEG quality level to use when compressing images (when
   ``maxwidth`` is set). This should be either a number from 1 to 100 or 0 to
   use the default quality. 65–75 is usually a good starting point. The default
@@ -250,21 +251,36 @@ Last.fm
 
 To use the Last.fm backend, you need to `register for a Last.fm API key`_. Set
 the ``lastfm_key`` configuration option to your API key, then add ``lastfm`` to
-the list of sources in your configutation.
+the list of sources in your configuration.
 
 .. _register for a Last.fm API key: https://www.last.fm/api/account/create
 
 Spotify
 '''''''
 
-Spotify backend requires `BeautifulSoup`_, which you can install using `pip`_ by typing::
-
-    pip install beautifulsoup4
-
 Spotify backend is enabled by default and will update album art if a valid Spotify album id is found.
 
 .. _pip: https://pip.pypa.io
 .. _BeautifulSoup: https://www.crummy.com/software/BeautifulSoup/bs4/doc/
+
+Cover Art URL
+'''''''''''''
+
+The `fetchart` plugin can also use a flexible attribute field ``cover_art_url``
+where you can manually specify the image URL to be used as cover art. Any custom
+plugin can use this field to provide the cover art and ``fetchart`` will use it
+as a source.
+
+.. _cover-art-archive-maxwidth:
+
+Cover Art Archive Pre-sized Thumbnails
+--------------------------------------
+
+The CAA provides pre-sized thumbnails of width 250, 500, and 1200 pixels. If you
+set the `maxwidth` option to one of these values, the corresponding image will
+be downloaded, saving `beets` the need to scale down the image. It can also
+speed up the downloading process, as some cover arts can sometimes be very
+large.
 
 Storing the Artwork's Source
 ----------------------------

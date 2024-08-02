@@ -4,17 +4,22 @@ Discogs Plugin
 The ``discogs`` plugin extends the autotagger's search capabilities to
 include matches from the `Discogs`_ database.
 
+Files can be imported as albums or as singletons. Since `Discogs`_ matches are
+always based on `Discogs`_ releases, the album tag is written even to
+singletons.  This enhances the importers results when reimporting as (full or
+partial) albums later on.
+
 .. _Discogs: https://discogs.com
 
 Installation
 ------------
 
 To use the ``discogs`` plugin, first enable it in your configuration (see
-:ref:`using-plugins`). Then, install the `python3-discogs-client`_ library by typing:
+:ref:`using-plugins`). Then, install ``beets`` with ``discogs`` extra
 
-.. code-block:: console
+.. code-block:: bash
 
-    $ pip install python3-discogs-client
+    pip install "beets[discogs]"
 
 You will also need to register for a `Discogs`_ account, and provide
 authentication credentials via a personal access token or an OAuth2

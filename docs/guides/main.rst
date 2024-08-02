@@ -10,7 +10,7 @@ Installing
 ----------
 
 You will need Python.
-Beets works on Python 3.7 or later.
+Beets works on Python 3.8 or later.
 
 * **macOS** 11 (Big Sur) includes Python 3.8 out of the box.
   You can opt for a more recent Python installing it via `Homebrew`_
@@ -29,6 +29,9 @@ Beets works on Python 3.7 or later.
 * On **Arch Linux**, `beets is in [community] <Arch community_>`_, so just run ``pacman -S
   beets``. (There's also a bleeding-edge `dev package <AUR_>`_ in the AUR, which will
   probably set your computer on fire.)
+
+* On **Alpine Linux**, `beets is in the community repository <Alpine package_>`_
+  and can be installed with ``apk add beets``.
 
 * For **Gentoo Linux**, beets is in Portage as ``media-sound/beets``. Just run
   ``emerge beets`` to install. There are several USE flags available for
@@ -54,6 +57,7 @@ Beets works on Python 3.7 or later.
 .. _Ubuntu details: https://launchpad.net/ubuntu/+source/beets
 .. _OpenBSD: http://openports.se/audio/beets
 .. _Arch community: https://www.archlinux.org/packages/community/any/beets/
+.. _Alpine package: https://pkgs.alpinelinux.org/package/edge/community/x86_64/beets
 .. _NixOS: https://github.com/NixOS/nixpkgs/tree/master/pkgs/tools/audio/beets
 .. _MacPorts: https://www.macports.org
 
@@ -94,7 +98,7 @@ Installing on Windows
 Installing beets on Windows can be tricky. Following these steps might help you
 get it right:
 
-1. If you don't have it, `install Python`_ (you want at least Python 3.7). The
+1. If you don't have it, `install Python`_ (you want at least Python 3.8). The
    installer should give you the option to "add Python to PATH." Check this
    box. If you do that, you can skip the next step.
 

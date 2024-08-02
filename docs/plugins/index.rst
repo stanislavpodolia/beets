@@ -61,8 +61,10 @@ following to your configuration::
 
    absubmit
    acousticbrainz
+   advancedrewrite
    albumtypes
    aura
+   autobpm
    badfiles
    bareasc
    beatport
@@ -99,6 +101,7 @@ following to your configuration::
    lastgenre
    lastimport
    limit
+   listenbrainz
    loadext
    lyrics
    mbcollection
@@ -122,6 +125,7 @@ following to your configuration::
    spotify
    subsonicplaylist
    subsonicupdate
+   substitute
    the
    thumbnails
    types
@@ -162,6 +166,9 @@ Metadata
 
 :doc:`acousticbrainz <acousticbrainz>`
    Fetch various AcousticBrainz metadata
+
+:doc:`autobpm <autobpm>`
+   Use `Librosa`_ to calculate the BPM from the audio.
 
 :doc:`bpm <bpm>`
    Measure tempo using keystrokes.
@@ -221,6 +228,7 @@ Metadata
 :doc:`zero <zero>`
    Nullify fields by pattern or unconditionally.
 
+.. _Librosa: https://github.com/librosa/librosa/
 .. _KeyFinder: http://www.ibrahimshaath.co.uk/keyfinder/
 .. _streaming_extractor_music: https://acousticbrainz.org/download
 
@@ -239,6 +247,14 @@ Path Formats
 
 :doc:`rewrite <rewrite>`
    Substitute values in path formats.
+
+:doc:`advancedrewrite <advancedrewrite>`
+   Substitute field values for items matching a query.
+
+:doc:`substitute <substitute>`
+   As an alternative to :doc:`rewrite <rewrite>`, use this plugin. The main
+   difference between them is that this plugin never modifies the files
+   metadata.
 
 :doc:`the <the>`
    Move patterns in path formats (i.e., move "a" and "the" to the
@@ -406,6 +422,10 @@ Here are a few of the plugins written by the beets community:
 `beets-autofix`_
    Automates repetitive tasks to keep your library in order.
 
+`beets-autogenre`_
+   Assigns genres to your library items using the :doc:`lastgenre <lastgenre>`
+   and `beets-xtractor`_ plugins as well as additional rules.
+
 `beets-audible`_
    Adds Audible as a tagger data source and provides
    other features for managing audiobook collections.
@@ -418,7 +438,9 @@ Here are a few of the plugins written by the beets community:
    Enables **bandcamp.com** autotagger with a fairly extensive amount of metadata.
 
 `beetstream`_
-   Is server implementation of the `SubSonic API`_ specification, allowing you to stream your music on a multitude of clients.
+   Server implementation of the `Subsonic API`_ specification, serving the
+   beets library and (:doc:`smartplaylist <smartplaylist>` plugin generated)
+   M3U playlists, allowing you to stream your music on a multitude of clients.
 
 `beets-bpmanalyser`_
    Analyses songs and calculates their tempo (BPM).
@@ -461,10 +483,16 @@ Here are a few of the plugins written by the beets community:
    metadata.
 
 `beets-jiosaavn`_
-   Adds JioSaavn.com as a tagger data source..
+   Adds JioSaavn.com as a tagger data source.
+
+`beets-more`_
+   Finds versions of indexed releases with more tracks, like deluxe and anniversary editions.
 
 `beets-mosaic`_
    Generates a montage of a mosaic from cover art.
+
+`beets-mpd-utils`_
+    Plugins to interface with `MPD`_. Comes with ``mpd_tracker`` (track play/skip counts from MPD) and  ``mpd_dj`` (auto-add songs to your queue.)
 
 `beets-noimport`_
    Adds and removes directories from the incremental import skip list.
@@ -476,9 +504,6 @@ Here are a few of the plugins written by the beets community:
 `beets-plexsync`_
    Allows you to sync your Plex library with your beets library, create smart playlists in Plex, and import online playlists (from services like Spotify) into Plex.
 
-`beets-popularity`_
-   Fetches popularity values from Deezer.
-
 `beets-setlister`_
    Generate playlists from the setlists of a given artist.
 
@@ -489,6 +514,15 @@ Here are a few of the plugins written by the beets community:
 `beets-usertag`_
    Lets you use keywords to tag and organize your music.
 
+`beets-webm3u`_
+   Serves the (:doc:`smartplaylist <smartplaylist>` plugin generated) M3U
+   playlists via HTTP.
+
+`beets-webrouter`_
+   Serves multiple beets webapps (e.g. :doc:`web <web>`, `beets-webm3u`_,
+   `beetstream`_, :doc:`aura <aura>`) using a single command/process/host/port,
+   each under a different path.
+
 `whatlastgenre`_
    Fetches genres from various music sites.
 
@@ -498,13 +532,19 @@ Here are a few of the plugins written by the beets community:
 `beets-ydl`_
    Downloads audio from youtube-dl sources and import into beets.
 
+`beets-ytimport`_
+   Download and import your liked songs from YouTube into beets.
+
 `beets-yearfixer`_
    Attempts to fix all missing ``original_year`` and ``year`` fields.
+
+`beets-youtube`_
+   Adds YouTube Music as a tagger data source.
 
 .. _beets-barcode: https://github.com/8h2a/beets-barcode
 .. _beetcamp: https://github.com/snejus/beetcamp
 .. _beetstream: https://github.com/BinaryBrain/Beetstream
-.. _SubSonic API: http://www.subsonic.org/pages/api.jsp
+.. _Subsonic API: http://www.subsonic.org/pages/api.jsp
 .. _beets-check: https://github.com/geigerzaehler/beets-check
 .. _beets-copyartifacts: https://github.com/adammillerio/beets-copyartifacts
 .. _dsedivec: https://github.com/dsedivec/beets-plugins
@@ -525,10 +565,11 @@ Here are a few of the plugins written by the beets community:
 .. _beets-noimport: https://gitlab.com/tiago.dias/beets-noimport
 .. _whatlastgenre: https://github.com/YetAnotherNerd/whatlastgenre/tree/master/plugin/beets
 .. _beets-usertag: https://github.com/igordertigor/beets-usertag
-.. _beets-popularity: https://github.com/abba23/beets-popularity
 .. _beets-plexsync: https://github.com/arsaboo/beets-plexsync
 .. _beets-jiosaavn: https://github.com/arsaboo/beets-jiosaavn
+.. _beets-youtube: https://github.com/arsaboo/beets-youtube
 .. _beets-ydl: https://github.com/vmassuchetto/beets-ydl
+.. _beets-ytimport: https://github.com/mgoltzsche/beets-ytimport
 .. _beet-summarize: https://github.com/steven-murray/beet-summarize
 .. _beets-mosaic: https://github.com/SusannaMaria/beets-mosaic
 .. _beets-goingrunning: https://pypi.org/project/beets-goingrunning
@@ -540,3 +581,8 @@ Here are a few of the plugins written by the beets community:
 .. _beets-originquery: https://github.com/x1ppy/beets-originquery
 .. _drop2beets: https://github.com/martinkirch/drop2beets
 .. _beets-audible: https://github.com/Neurrone/beets-audible
+.. _beets-more: https://forgejo.sny.sh/sun/beetsplug/src/branch/main/more
+.. _beets-mpd-utils: https://github.com/thekakkun/beets-mpd-utils
+.. _beets-webm3u: https://github.com/mgoltzsche/beets-webm3u
+.. _beets-webrouter: https://github.com/mgoltzsche/beets-webrouter
+.. _beets-autogenre: https://github.com/mgoltzsche/beets-autogenre

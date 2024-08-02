@@ -21,10 +21,9 @@ calls (`debug`, `info`, etc).
 """
 
 
-from copy import copy
-import sys
-import threading
 import logging
+import threading
+from copy import copy
 
 
 def logsafe(val):
@@ -40,7 +39,7 @@ def logsafe(val):
         # (a) only do this for paths, if they can be given a distinct
         # type, and (b) warn the developer if they do this for other
         # bytestrings.
-        return val.decode('utf-8', 'replace')
+        return val.decode("utf-8", "replace")
 
     # Other objects are used as-is so field access, etc., still works in
     # the format string. Relies on a working __str__ implementation.
@@ -70,33 +69,35 @@ class StrFormatLogger(logging.Logger):
             kwargs = {k: logsafe(v) for (k, v) in self.kwargs.items()}
             return self.msg.format(*args, **kwargs)
 
-    def _log(self, level, msg, args, exc_info=None, extra=None,
-             stack_info=False, **kwargs):
+    def _log(
+        self,
+        level,
+        msg,
+        args,
+        exc_info=None,
+        extra=None,
+        stack_info=False,
+        **kwargs,
+    ):
         """Log msg.format(*args, **kwargs)"""
         m = self._LogMessage(msg, args, kwargs)
 
         stacklevel = kwargs.pop("stacklevel", 1)
-        if sys.version_info >= (3, 8):
-            stacklevel = {"stacklevel": stacklevel}
-        else:
-            # Simply ignore this when not supported by current Python version.
-            # Can be dropped when we remove support for Python 3.7.
-            stacklevel = {}
+        stacklevel = {"stacklevel": stacklevel}
 
         return super()._log(
-          level,
-          m,
-          (),
-          exc_info=exc_info,
-          extra=extra,
-          stack_info=stack_info,
-          **stacklevel,
+            level,
+            m,
+            (),
+            exc_info=exc_info,
+            extra=extra,
+            stack_info=stack_info,
+            **stacklevel,
         )
 
 
 class ThreadLocalLevelLogger(logging.Logger):
-    """A version of `Logger` whose level is thread-local instead of shared.
-    """
+    """A version of `Logger` whose level is thread-local instead of shared."""
 
     def __init__(self, name, level=logging.NOTSET):
         self._thread_level = threading.local()
@@ -133,6 +134,7 @@ my_manager.loggerClass = BeetsLogger
 
 # Act like the stdlib logging module by re-exporting its namespace.
 from logging import *  # noqa
+
 
 # Override the `getLogger` to use our machinery.
 def getLogger(name=None):  # noqa
