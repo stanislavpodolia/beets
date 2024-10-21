@@ -1,8 +1,10 @@
 import os
 import errno
+from beets import config
 from beets.plugins import BeetsPlugin
-from beets.ui import Subcommand
-from beets import ui, library
+from beets.ui import Subcommand, _open_library
+from beets.util import syspath
+from beets.library import Item, Album
 import re
 import threading
 
@@ -16,15 +18,29 @@ class symlink_item_thread(threading.Thread):
         self.item = item
     def run(self):
         dst_file = os.path.join(self.dst_dir, os.path.basename(self.item.path.decode('utf8')))
-        if not os.path.exists(dst_file):
-            try:
-                os.symlink(self.item.path.decode('utf8'), dst_file)
-            except:
-                print('Cant symlink', self.item.path.decode('utf8'))
-                return
+        try:
+            if os.path.islink(dst_file):
+                os.remove(dst_file)
+            os.symlink(self.item.path.decode('utf8'), dst_file)
+        except:
+            print('Cant symlink', self.item.path.decode('utf8'))
+            return
             # except OSError as exc:
                 # if exc.errno != errno.EEXIST:
                 #     raise
+class remove_symlink_item_thread(threading.Thread):
+    def __init__(self, dst_dir, item):
+        threading.Thread.__init__(self)
+        self.dst_dir = dst_dir
+        self.item = item
+    def run(self):
+        dst_file = os.path.join(self.dst_dir, os.path.basename(self.item.path.decode('utf8')))
+        if os.path.islink(dst_file):
+            try:
+                os.remove(dst_file)
+            except:
+                print('Cant remove symlink', dst_file)
+                return
 
 def album_imported(album):
     if album.catalognum and album.label:
@@ -48,6 +64,39 @@ def album_imported(album):
 
         for item in album.items(None, None, 'id, path'):
             t = symlink_item_thread(dst_dir, item)
+            t.start()
+            threads.append(t)
+
+        for t in threads:
+            t.join()
+
+def item_removed(item):
+    lib = _open_library(config)
+    if isinstance(item, Item):
+        album_id = item.album_id
+        album = lib.get_album(album_id)
+        dst_dir = os.path.join(
+            'D:/Music/Record Labels/',
+            sanitize(item.album.label),
+            sanitize('[{0}] {1} - {2}'.format(album.catalognum, album.albumartist, album.album))
+        )
+
+        t = remove_symlink_item_thread(dst_dir, item)
+        t.start()
+        t.join()
+    elif isinstance(item, Album):
+        album_id = item.id
+        album = lib.get_album(album_id)
+        dst_dir = os.path.join(
+            'D:/Music/Record Labels/',
+            sanitize(item.album.label),
+            sanitize('[{0}] {1} - {2}'.format(album.catalognum, album.albumartist, album.album))
+        )
+
+        threads = []
+
+        for item in album.items():
+            t = remove_symlink_item_thread(dst_dir, item)
             t.start()
             threads.append(t)
 
@@ -109,3 +158,6 @@ class MySymlinkPlugin(BeetsPlugin):
 
     def album_imported(self, lib, album):
         album_imported(album)
+
+    def item_removed(self, item):
+        item_removed(item)
