@@ -415,10 +415,11 @@ class DiscogsPlugin(BeetsPlugin):
         # contained on nested discogs fields.
         albumtype = media = label = catalogno = labelid = None
         if result.data.get("formats"):
-            albumtype = (
-                ", ".join(result.data["formats"][0].get("descriptions", []))
-                or None
-            )
+            descriptions = result.data["formats"][0].get("descriptions", [])
+            if isinstance(descriptions, list):
+                albumtype = ", ".join(descriptions) or None
+            else:
+                albumtype = None
             media = result.data["formats"][0]["name"]
         if result.data.get("labels"):
             label = result.data["labels"][0].get("name")
