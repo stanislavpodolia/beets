@@ -1697,6 +1697,7 @@ def update_items(lib, query, album, move, pretend, fields, exclude_fields=None):
 
             # Check for and display changes.
             changed = ui.show_model_changes(item, fields=item_fields)
+            item_fields = item_fields.union(set(["mtime"]))
 
             # Save changes.
             if not pretend:
