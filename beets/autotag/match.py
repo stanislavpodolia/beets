@@ -287,6 +287,12 @@ def distance(
     elif likelies["country"] and album_info.country:
         dist.add_string("country", likelies["country"], album_info.country)
 
+    # Preferred labels.
+    patterns = config["match"]["preferred"]["labels"].as_str_seq()
+    patterns = cast(Sequence[str], patterns)
+    options = [re.compile(pat, re.I) for pat in patterns]
+    if album_info.label and options:
+        dist.add_priority("label", album_info.label, options)
     # Label.
     if likelies["label"] and album_info.label:
         dist.add_string("label", likelies["label"], album_info.label)
