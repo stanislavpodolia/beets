@@ -8,6 +8,8 @@ from beets.library import Item, Album
 import re
 import threading
 
+rootDir = 'D:/Music/Record Labels/'
+
 def sanitize(name):
     return re.sub(r'[\\/*?:"<>|]', "_", name)
 
@@ -38,6 +40,8 @@ class remove_symlink_item_thread(threading.Thread):
         if os.path.islink(dst_file):
             try:
                 os.remove(dst_file)
+                if len(os.listdir(self.dst_dir)) == 0:
+                    os.rmdir(self.dst_dir)
             except:
                 print('Cant remove symlink', dst_file)
                 return
@@ -76,8 +80,8 @@ def item_removed(item):
         album_id = item.album_id
         album = lib.get_album(album_id)
         dst_dir = os.path.join(
-            'D:/Music/Record Labels/',
-            sanitize(item.album.label),
+            rootDir,
+            sanitize(album.label),
             sanitize('[{0}] {1} - {2}'.format(album.catalognum, album.albumartist, album.album))
         )
 
@@ -88,8 +92,8 @@ def item_removed(item):
         album_id = item.id
         album = lib.get_album(album_id)
         dst_dir = os.path.join(
-            'D:/Music/Record Labels/',
-            sanitize(item.album.label),
+            rootDir,
+            sanitize(album.label),
             sanitize('[{0}] {1} - {2}'.format(album.catalognum, album.albumartist, album.album))
         )
 
@@ -148,10 +152,17 @@ class SymlinkLibraryCommand(Subcommand):
         for t in threads:
             t.join()
 
+        folders = list(os.walk(rootDir))[1:]
+
+        for folder in folders:
+            if not folder[2]:
+                os.rmdir(folder[0])
+
 class MySymlinkPlugin(BeetsPlugin):
     def __init__(self):
         super(MySymlinkPlugin, self).__init__()
         self.register_listener('album_imported', self.album_imported)
+        self.register_listener('item_removed', self.item_removed)
 
     def commands(self):
         return [SymlinkLibraryCommand()]

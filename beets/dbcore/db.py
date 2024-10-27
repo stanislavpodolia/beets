@@ -1257,8 +1257,11 @@ class Database:
         if query.field_names & model_cls.other_db_fields:
             _from += f" {model_cls.relation_join}"
 
-        if select:
-            select += ', artist_sort, artist, album, disc, track'
+        if select and table != "albums":
+            if table != "albums":
+                select += ', artist_sort, artist, album, disc, track'
+            else:
+                select += ', albumartist_sort'
 
         # group by id to avoid duplicates when joining with the relation
         sql = (
