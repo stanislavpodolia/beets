@@ -12,8 +12,8 @@
 # The above copyright notice and this permission notice shall be
 # included in all copies or substantial portions of the Software.
 
-"""Tests for the `filefilter` plugin.
-"""
+"""Tests for the `filefilter` plugin."""
+
 from beets.test.helper import ImportTestCase, PluginMixin
 from beets.util import bytestring_path
 
@@ -45,8 +45,8 @@ class FileFilterPluginMixin(PluginMixin, ImportTestCase):
         with self.configure_plugin(config):
             self.importer.run()
 
-        self.assertEqual(len(self.lib.albums()), expected_album_count)
-        self.assertEqual({i.path for i in self.lib.items()}, expected_paths)
+        assert len(self.lib.albums()) == expected_album_count
+        assert {i.path for i in self.lib.items()} == expected_paths
 
 
 class FileFilterPluginNonSingletonTest(FileFilterPluginMixin):

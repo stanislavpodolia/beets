@@ -34,10 +34,10 @@ jobs:
         run: |
           sudo apt update
           sudo apt install ffmpeg gobject-introspection libgirepository1.0-dev
-          poetry install --extras replaygain
+          poetry install --extras=replaygain --extras=reflink
 
       - name: Install Python dependencies
-        run: poetry install --only=main,test
+        run: poetry install --only=main,test --extras=autobpm
 
       - if: ${{ env.IS_MAIN_PYTHON != 'true' }}
         name: Test without coverage
@@ -75,4 +75,4 @@ jobs:
         uses: codecov/codecov-action@v4
         with:
           files: ./coverage.xml
-          use_oidc: true
+          use_oidc: ${{ !(github.event_name == 'pull_request' && github.event.pull_request.head.repo.fork) }}

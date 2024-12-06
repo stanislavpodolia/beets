@@ -16,7 +16,6 @@
 
 import os
 import sys
-import tempfile
 import unittest
 from contextlib import contextmanager
 
@@ -59,24 +58,12 @@ log = logging.getLogger("beets")
 log.propagate = True
 log.setLevel(logging.DEBUG)
 
-# Dummy item creation.
-_item_ident = 0
-
 # OS feature test.
 HAVE_SYMLINK = sys.platform != "win32"
 HAVE_HARDLINK = sys.platform != "win32"
 
-try:
-    import reflink
-
-    HAVE_REFLINK = reflink.supported_at(tempfile.gettempdir())
-except ImportError:
-    HAVE_REFLINK = False
-
 
 def item(lib=None):
-    global _item_ident
-    _item_ident += 1
     i = beets.library.Item(
         title="the title",
         artist="the artist",
@@ -101,7 +88,6 @@ def item(lib=None):
         comments="the comments",
         bpm=8,
         comp=True,
-        path=f"somepath{_item_ident}",
         length=60.0,
         bitrate=128000,
         format="FLAC",
@@ -118,30 +104,6 @@ def item(lib=None):
     return i
 
 
-def album(lib=None):
-    global _item_ident
-    _item_ident += 1
-    i = beets.library.Album(
-        artpath=None,
-        albumartist="some album artist",
-        albumartist_sort="some sort album artist",
-        albumartist_credit="some album artist credit",
-        album="the album",
-        genre="the genre",
-        year=2014,
-        month=2,
-        day=5,
-        tracktotal=0,
-        disctotal=1,
-        comp=False,
-        mb_albumid="someID-1",
-        mb_albumartistid="someID-1",
-    )
-    if lib:
-        lib.add(i)
-    return i
-
-
 # Dummy import session.
 def import_session(lib=None, loghandler=None, paths=[], query=[], cli=False):
     cls = commands.TerminalImportSession if cli else importer.ImportSession
@@ -151,43 +113,35 @@ def import_session(lib=None, loghandler=None, paths=[], query=[], cli=False):
 class Assertions:
     """A mixin with additional unit test assertions."""
 
-    def assertExists(self, path):  # noqa
-        self.assertTrue(
-            os.path.exists(syspath(path)), f"file does not exist: {path!r}"
-        )
+    def assertExists(self, path):
+        assert os.path.exists(syspath(path)), f"file does not exist: {path!r}"
 
-    def assertNotExists(self, path):  # noqa
-        self.assertFalse(
-            os.path.exists(syspath(path)), f"file exists: {path!r}"
-        )
+    def assertNotExists(self, path):
+        assert not os.path.exists(syspath(path)), f"file exists: {path!r}"
 
-    def assertIsFile(self, path):  # noqa
+    def assertIsFile(self, path):
         self.assertExists(path)
-        self.assertTrue(
-            os.path.isfile(syspath(path)),
-            "path exists, but is not a regular file: {!r}".format(path),
-        )
+        assert os.path.isfile(
+            syspath(path)
+        ), "path exists, but is not a regular file: {!r}".format(path)
 
-    def assertIsDir(self, path):  # noqa
+    def assertIsDir(self, path):
         self.assertExists(path)
-        self.assertTrue(
-            os.path.isdir(syspath(path)),
-            "path exists, but is not a directory: {!r}".format(path),
-        )
+        assert os.path.isdir(
+            syspath(path)
+        ), "path exists, but is not a directory: {!r}".format(path)
 
     def assert_equal_path(self, a, b):
         """Check that two paths are equal."""
-        self.assertEqual(
-            util.normpath(a),
-            util.normpath(b),
-            f"paths are not equal: {a!r} and {b!r}",
-        )
+        a_bytes, b_bytes = util.normpath(a), util.normpath(b)
+
+        assert a_bytes == b_bytes, f"{a_bytes=} != {b_bytes=}"
 
 
 # Mock I/O.
 
 
-class InputException(Exception):
+class InputError(Exception):
     def __init__(self, output=None):
         self.output = output
 
@@ -234,9 +188,9 @@ class DummyIn:
     def readline(self):
         if not self.buf:
             if self.out:
-                raise InputException(self.out.get())
+                raise InputError(self.out.get())
             else:
-                raise InputException()
+                raise InputError()
         self.reads += 1
         return self.buf.pop(0)
 

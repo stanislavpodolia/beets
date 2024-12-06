@@ -12,14 +12,15 @@
 # The above copyright notice and this permission notice shall be
 # included in all copies or substantial portions of the Software.
 
-"""Various tests for querying the library database.
-"""
+"""Various tests for querying the library database."""
 
 import os
 import sys
 import unittest
 from contextlib import contextmanager
 from functools import partial
+
+import pytest
 
 import beets.library
 from beets import dbcore, util
@@ -41,18 +42,18 @@ WIN32_NO_IMPLICIT_PATHS = "Implicit paths are not supported on Windows"
 
 class AssertsMixin:
     def assert_items_matched(self, results, titles):
-        self.assertEqual({i.title for i in results}, set(titles))
+        assert {i.title for i in results} == set(titles)
 
     def assert_albums_matched(self, results, albums):
-        self.assertEqual({a.album for a in results}, set(albums))
+        assert {a.album for a in results} == set(albums)
 
-    def assertInResult(self, item, results):  # noqa
+    def assertInResult(self, item, results):
         result_ids = [i.id for i in results]
-        self.assertIn(item.id, result_ids)
+        assert item.id in result_ids
 
-    def assertNotInResult(self, item, results):  # noqa
+    def assertNotInResult(self, item, results):
         result_ids = [i.id for i in results]
-        self.assertNotIn(item.id, result_ids)
+        assert item.id not in result_ids
 
 
 class AnyFieldQueryTest(ItemInDBTestCase):
@@ -62,19 +63,19 @@ class AnyFieldQueryTest(ItemInDBTestCase):
             beets.library.Item._fields.keys(),
             dbcore.query.SubstringQuery,
         )
-        self.assertEqual(self.lib.items(q).get().title, "the title")
+        assert self.lib.items(q).get().title == "the title"
 
     def test_restriction_completeness(self):
         q = dbcore.query.AnyFieldQuery(
             "title", ["title"], dbcore.query.SubstringQuery
         )
-        self.assertEqual(self.lib.items(q).get().title, "the title")
+        assert self.lib.items(q).get().title == "the title"
 
     def test_restriction_soundness(self):
         q = dbcore.query.AnyFieldQuery(
             "title", ["artist"], dbcore.query.SubstringQuery
         )
-        self.assertIsNone(self.lib.items(q).get())
+        assert self.lib.items(q).get() is None
 
     def test_eq(self):
         q1 = dbcore.query.AnyFieldQuery(
@@ -83,10 +84,10 @@ class AnyFieldQueryTest(ItemInDBTestCase):
         q2 = dbcore.query.AnyFieldQuery(
             "foo", ["bar"], dbcore.query.SubstringQuery
         )
-        self.assertEqual(q1, q2)
+        assert q1 == q2
 
         q2.query_class = None
-        self.assertNotEqual(q1, q2)
+        assert q1 != q2
 
 
 # A test case class providing a library with some dummy data and some
@@ -356,19 +357,19 @@ class GetTest(DummyDataTestCase):
         q = "xyzzy:nonsense"
         results = self.lib.items(q)
         titles = [i.title for i in results]
-        self.assertEqual(titles, [])
+        assert titles == []
 
     def test_unknown_field_name_no_results_in_album_query(self):
         q = "xyzzy:nonsense"
         results = self.lib.albums(q)
         names = [a.album for a in results]
-        self.assertEqual(names, [])
+        assert names == []
 
     def test_item_field_name_matches_nothing_in_album_query(self):
         q = "format:nonsense"
         results = self.lib.albums(q)
         names = [a.album for a in results]
-        self.assertEqual(names, [])
+        assert names == []
 
     def test_unicode_query(self):
         item = self.lib.items().get()
@@ -382,12 +383,12 @@ class GetTest(DummyDataTestCase):
     def test_numeric_search_positive(self):
         q = dbcore.query.NumericQuery("year", "2001")
         results = self.lib.items(q)
-        self.assertTrue(results)
+        assert results
 
     def test_numeric_search_negative(self):
         q = dbcore.query.NumericQuery("year", "1999")
         results = self.lib.items(q)
-        self.assertFalse(results)
+        assert not results
 
     def test_album_field_fallback(self):
         self.album["albumflex"] = "foo"
@@ -395,25 +396,15 @@ class GetTest(DummyDataTestCase):
 
         q = "albumflex:foo"
         results = self.lib.items(q)
-        self.assert_items_matched(
-            results,
-            [
-                "foo bar",
-                "baz qux",
-            ],
-        )
+        self.assert_items_matched(results, ["foo bar", "baz qux"])
 
     def test_invalid_query(self):
-        with self.assertRaises(InvalidQueryArgumentValueError) as raised:
+        with pytest.raises(InvalidQueryArgumentValueError, match="not an int"):
             dbcore.query.NumericQuery("year", "199a")
-        self.assertIn("not an int", str(raised.exception))
 
-        with self.assertRaises(InvalidQueryArgumentValueError) as raised:
+        msg_match = r"not a regular expression.*unterminated subpattern"
+        with pytest.raises(ParsingError, match=msg_match):
             dbcore.query.RegexpQuery("year", "199(")
-        exception_text = str(raised.exception)
-        self.assertIn("not a regular expression", exception_text)
-        self.assertIn("unterminated subpattern", exception_text)
-        self.assertIsInstance(raised.exception, ParsingError)
 
 
 class MatchTest(BeetsTestCase):
@@ -423,53 +414,53 @@ class MatchTest(BeetsTestCase):
 
     def test_regex_match_positive(self):
         q = dbcore.query.RegexpQuery("album", "^the album$")
-        self.assertTrue(q.match(self.item))
+        assert q.match(self.item)
 
     def test_regex_match_negative(self):
         q = dbcore.query.RegexpQuery("album", "^album$")
-        self.assertFalse(q.match(self.item))
+        assert not q.match(self.item)
 
     def test_regex_match_non_string_value(self):
         q = dbcore.query.RegexpQuery("disc", "^6$")
-        self.assertTrue(q.match(self.item))
+        assert q.match(self.item)
 
     def test_substring_match_positive(self):
         q = dbcore.query.SubstringQuery("album", "album")
-        self.assertTrue(q.match(self.item))
+        assert q.match(self.item)
 
     def test_substring_match_negative(self):
         q = dbcore.query.SubstringQuery("album", "ablum")
-        self.assertFalse(q.match(self.item))
+        assert not q.match(self.item)
 
     def test_substring_match_non_string_value(self):
         q = dbcore.query.SubstringQuery("disc", "6")
-        self.assertTrue(q.match(self.item))
+        assert q.match(self.item)
 
     def test_exact_match_nocase_positive(self):
         q = dbcore.query.StringQuery("genre", "the genre")
-        self.assertTrue(q.match(self.item))
+        assert q.match(self.item)
         q = dbcore.query.StringQuery("genre", "THE GENRE")
-        self.assertTrue(q.match(self.item))
+        assert q.match(self.item)
 
     def test_exact_match_nocase_negative(self):
         q = dbcore.query.StringQuery("genre", "genre")
-        self.assertFalse(q.match(self.item))
+        assert not q.match(self.item)
 
     def test_year_match_positive(self):
         q = dbcore.query.NumericQuery("year", "1")
-        self.assertTrue(q.match(self.item))
+        assert q.match(self.item)
 
     def test_year_match_negative(self):
         q = dbcore.query.NumericQuery("year", "10")
-        self.assertFalse(q.match(self.item))
+        assert not q.match(self.item)
 
     def test_bitrate_range_positive(self):
         q = dbcore.query.NumericQuery("bitrate", "100000..200000")
-        self.assertTrue(q.match(self.item))
+        assert q.match(self.item)
 
     def test_bitrate_range_negative(self):
         q = dbcore.query.NumericQuery("bitrate", "200000..300000")
-        self.assertFalse(q.match(self.item))
+        assert not q.match(self.item)
 
     def test_open_range(self):
         dbcore.query.NumericQuery("bitrate", "100000..")
@@ -479,10 +470,10 @@ class MatchTest(BeetsTestCase):
         q2 = dbcore.query.MatchQuery("foo", "bar")
         q3 = dbcore.query.MatchQuery("foo", "baz")
         q4 = dbcore.query.StringFieldQuery("foo", "bar")
-        self.assertEqual(q1, q2)
-        self.assertNotEqual(q1, q3)
-        self.assertNotEqual(q1, q4)
-        self.assertNotEqual(q3, q4)
+        assert q1 == q2
+        assert q1 != q3
+        assert q1 != q4
+        assert q3 != q4
 
 
 class PathQueryTest(ItemInDBTestCase, AssertsMixin):
@@ -667,13 +658,13 @@ class PathQueryTest(ItemInDBTestCase, AssertsMixin):
         is_path_query = beets.library.PathQuery.is_path_query
 
         with self.force_implicit_query_detection():
-            self.assertTrue(is_path_query("/foo/bar"))
-            self.assertTrue(is_path_query("foo/bar"))
-            self.assertTrue(is_path_query("foo/"))
-            self.assertFalse(is_path_query("foo"))
-            self.assertTrue(is_path_query("foo/:bar"))
-            self.assertFalse(is_path_query("foo:bar/"))
-            self.assertFalse(is_path_query("foo:/bar"))
+            assert is_path_query("/foo/bar")
+            assert is_path_query("foo/bar")
+            assert is_path_query("foo/")
+            assert not is_path_query("foo")
+            assert is_path_query("foo/:bar")
+            assert not is_path_query("foo:bar/")
+            assert not is_path_query("foo:/bar")
 
     # FIXME: shouldn't this also work on windows?
     @unittest.skipIf(sys.platform == "win32", WIN32_NO_IMPLICIT_PATHS)
@@ -687,18 +678,18 @@ class PathQueryTest(ItemInDBTestCase, AssertsMixin):
         is_path_query = beets.library.PathQuery.is_path_query
 
         path = self.touch(os.path.join(b"foo", b"bar"))
-        self.assertTrue(os.path.isabs(util.syspath(path)))
+        assert os.path.isabs(util.syspath(path))
         path_str = path.decode("utf-8")
 
         # The file itself.
-        self.assertTrue(is_path_query(path_str))
+        assert is_path_query(path_str)
 
         # The parent directory.
         parent = os.path.dirname(path_str)
-        self.assertTrue(is_path_query(parent))
+        assert is_path_query(parent)
 
         # Some non-existent path.
-        self.assertFalse(is_path_query(path_str + "baz"))
+        assert not is_path_query(f"{path_str}baz")
 
     def test_detect_relative_path(self):
         """Test detection of implicit path queries based on whether or
@@ -715,10 +706,10 @@ class PathQueryTest(ItemInDBTestCase, AssertsMixin):
         cur_dir = os.getcwd()
         try:
             os.chdir(syspath(self.temp_dir))
-            self.assertTrue(is_path_query("foo/"))
-            self.assertTrue(is_path_query("foo/bar"))
-            self.assertTrue(is_path_query("foo/bar:tagada"))
-            self.assertFalse(is_path_query("bar"))
+            assert is_path_query("foo/")
+            assert is_path_query("foo/bar")
+            assert is_path_query("foo/bar:tagada")
+            assert not is_path_query("bar")
         finally:
             os.chdir(cur_dir)
 
@@ -731,32 +722,32 @@ class IntQueryTest(BeetsTestCase):
     def test_exact_value_match(self):
         item = self.add_item(bpm=120)
         matched = self.lib.items("bpm:120").get()
-        self.assertEqual(item.id, matched.id)
+        assert item.id == matched.id
 
     def test_range_match(self):
         item = self.add_item(bpm=120)
         self.add_item(bpm=130)
 
         matched = self.lib.items("bpm:110..125")
-        self.assertEqual(1, len(matched))
-        self.assertEqual(item.id, matched.get().id)
+        assert 1 == len(matched)
+        assert item.id == matched.get().id
 
     def test_flex_range_match(self):
         Item._types = {"myint": types.Integer()}
         item = self.add_item(myint=2)
         matched = self.lib.items("myint:2").get()
-        self.assertEqual(item.id, matched.id)
+        assert item.id == matched.id
 
     def test_flex_dont_match_missing(self):
         Item._types = {"myint": types.Integer()}
         self.add_item()
         matched = self.lib.items("myint:2").get()
-        self.assertIsNone(matched)
+        assert matched is None
 
     def test_no_substring_match(self):
         self.add_item(bpm=120)
         matched = self.lib.items("bpm:12").get()
-        self.assertIsNone(matched)
+        assert matched is None
 
 
 class BoolQueryTest(BeetsTestCase, AssertsMixin):
@@ -815,11 +806,11 @@ class BoolQueryTest(BeetsTestCase, AssertsMixin):
 class DefaultSearchFieldsTest(DummyDataTestCase):
     def test_albums_matches_album(self):
         albums = list(self.lib.albums("baz"))
-        self.assertEqual(len(albums), 1)
+        assert len(albums) == 1
 
     def test_albums_matches_albumartist(self):
         albums = list(self.lib.albums(["album artist"]))
-        self.assertEqual(len(albums), 1)
+        assert len(albums) == 1
 
     def test_items_matches_title(self):
         items = self.lib.items("beets")
@@ -868,7 +859,7 @@ class NoneQueryTest(BeetsTestCase, AssertsMixin):
 class NotQueryMatchTest(BeetsTestCase):
     """Test `query.NotQuery` matching against a single item, using the same
     cases and assertions as on `MatchTest`, plus assertion on the negated
-    queries (ie. assertTrue(q) -> assertFalse(NotQuery(q))).
+    queries (ie. assert q -> assert not NotQuery(q)).
     """
 
     def setUp(self):
@@ -877,53 +868,53 @@ class NotQueryMatchTest(BeetsTestCase):
 
     def test_regex_match_positive(self):
         q = dbcore.query.RegexpQuery("album", "^the album$")
-        self.assertTrue(q.match(self.item))
-        self.assertFalse(dbcore.query.NotQuery(q).match(self.item))
+        assert q.match(self.item)
+        assert not dbcore.query.NotQuery(q).match(self.item)
 
     def test_regex_match_negative(self):
         q = dbcore.query.RegexpQuery("album", "^album$")
-        self.assertFalse(q.match(self.item))
-        self.assertTrue(dbcore.query.NotQuery(q).match(self.item))
+        assert not q.match(self.item)
+        assert dbcore.query.NotQuery(q).match(self.item)
 
     def test_regex_match_non_string_value(self):
         q = dbcore.query.RegexpQuery("disc", "^6$")
-        self.assertTrue(q.match(self.item))
-        self.assertFalse(dbcore.query.NotQuery(q).match(self.item))
+        assert q.match(self.item)
+        assert not dbcore.query.NotQuery(q).match(self.item)
 
     def test_substring_match_positive(self):
         q = dbcore.query.SubstringQuery("album", "album")
-        self.assertTrue(q.match(self.item))
-        self.assertFalse(dbcore.query.NotQuery(q).match(self.item))
+        assert q.match(self.item)
+        assert not dbcore.query.NotQuery(q).match(self.item)
 
     def test_substring_match_negative(self):
         q = dbcore.query.SubstringQuery("album", "ablum")
-        self.assertFalse(q.match(self.item))
-        self.assertTrue(dbcore.query.NotQuery(q).match(self.item))
+        assert not q.match(self.item)
+        assert dbcore.query.NotQuery(q).match(self.item)
 
     def test_substring_match_non_string_value(self):
         q = dbcore.query.SubstringQuery("disc", "6")
-        self.assertTrue(q.match(self.item))
-        self.assertFalse(dbcore.query.NotQuery(q).match(self.item))
+        assert q.match(self.item)
+        assert not dbcore.query.NotQuery(q).match(self.item)
 
     def test_year_match_positive(self):
         q = dbcore.query.NumericQuery("year", "1")
-        self.assertTrue(q.match(self.item))
-        self.assertFalse(dbcore.query.NotQuery(q).match(self.item))
+        assert q.match(self.item)
+        assert not dbcore.query.NotQuery(q).match(self.item)
 
     def test_year_match_negative(self):
         q = dbcore.query.NumericQuery("year", "10")
-        self.assertFalse(q.match(self.item))
-        self.assertTrue(dbcore.query.NotQuery(q).match(self.item))
+        assert not q.match(self.item)
+        assert dbcore.query.NotQuery(q).match(self.item)
 
     def test_bitrate_range_positive(self):
         q = dbcore.query.NumericQuery("bitrate", "100000..200000")
-        self.assertTrue(q.match(self.item))
-        self.assertFalse(dbcore.query.NotQuery(q).match(self.item))
+        assert q.match(self.item)
+        assert not dbcore.query.NotQuery(q).match(self.item)
 
     def test_bitrate_range_negative(self):
         q = dbcore.query.NumericQuery("bitrate", "200000..300000")
-        self.assertFalse(q.match(self.item))
-        self.assertTrue(dbcore.query.NotQuery(q).match(self.item))
+        assert not q.match(self.item)
+        assert dbcore.query.NotQuery(q).match(self.item)
 
     def test_open_range(self):
         q = dbcore.query.NumericQuery("bitrate", "100000..")
@@ -936,7 +927,7 @@ class NotQueryTest(DummyDataTestCase):
     - `test_get_yyy`: tests on query strings (similar to `GetTest`)
     """
 
-    def assertNegationProperties(self, q):  # noqa
+    def assertNegationProperties(self, q):
         """Given a Query `q`, assert that:
         - q OR not(q) == all items
         - q AND not(q) == 0
@@ -953,15 +944,14 @@ class NotQueryTest(DummyDataTestCase):
         all_titles = {i.title for i in self.lib.items()}
         q_results = {i.title for i in self.lib.items(q)}
         not_q_results = {i.title for i in self.lib.items(not_q)}
-        self.assertEqual(q_results.union(not_q_results), all_titles)
-        self.assertEqual(q_results.intersection(not_q_results), set())
+        assert q_results.union(not_q_results) == all_titles
+        assert q_results.intersection(not_q_results) == set()
 
         # round trip
         not_not_q = dbcore.query.NotQuery(not_q)
-        self.assertEqual(
-            {i.title for i in self.lib.items(q)},
-            {i.title for i in self.lib.items(not_not_q)},
-        )
+        assert {i.title for i in self.lib.items(q)} == {
+            i.title for i in self.lib.items(not_not_q)
+        }
 
     def test_type_and(self):
         # not(a and b) <-> not(a) or not(b)
@@ -1114,10 +1104,9 @@ class NotQueryTest(DummyDataTestCase):
             q_slow = dbcore.query.NotQuery(klass(*(args + [False])))
 
             try:
-                self.assertEqual(
-                    [i.title for i in self.lib.items(q_fast)],
-                    [i.title for i in self.lib.items(q_slow)],
-                )
+                assert [i.title for i in self.lib.items(q_fast)] == [
+                    i.title for i in self.lib.items(q_slow)
+                ]
             except NotImplementedError:
                 # ignore classes that do not provide `fast` implementation
                 pass

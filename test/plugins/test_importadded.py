@@ -17,6 +17,8 @@
 
 import os
 
+import pytest
+
 from beets import importer
 from beets.test.helper import AutotagStub, ImportTestCase, PluginMixin
 from beets.util import displayable_path, syspath
@@ -72,16 +74,16 @@ class ImportAddedTest(PluginMixin, ImportTestCase):
             "No MediaFile found for Item " + displayable_path(item.path)
         )
 
-    def assertEqualTimes(self, first, second, msg=None):  # noqa
+    def assertEqualTimes(self, first, second, msg=None):
         """For comparing file modification times at a sufficient precision"""
-        self.assertAlmostEqual(first, second, places=4, msg=msg)
+        assert first == pytest.approx(second, rel=1e-4), msg
 
-    def assertAlbumImport(self):  # noqa
+    def assertAlbumImport(self):
         self.importer.run()
         album = self.lib.albums().get()
-        self.assertEqual(album.added, self.min_mtime)
+        assert album.added == self.min_mtime
         for item in album.items():
-            self.assertEqual(item.added, self.min_mtime)
+            assert item.added == self.min_mtime
 
     def test_import_album_with_added_dates(self):
         self.assertAlbumImport()
@@ -97,7 +99,7 @@ class ImportAddedTest(PluginMixin, ImportTestCase):
         self.config["importadded"]["preserve_mtimes"] = True
         self.importer.run()
         album = self.lib.albums().get()
-        self.assertEqual(album.added, self.min_mtime)
+        assert album.added == self.min_mtime
         for item in album.items():
             self.assertEqualTimes(item.added, self.min_mtime)
             mediafile_mtime = os.path.getmtime(self.find_media_file(item).path)

@@ -12,13 +12,13 @@
 # The above copyright notice and this permission notice shall be
 # included in all copies or substantial portions of the Software.
 
-"""Test the beets.random utilities associated with the random plugin.
-"""
-
+"""Test the beets.random utilities associated with the random plugin."""
 
 import math
 import unittest
 from random import Random
+
+import pytest
 
 from beets import random
 from beets.test.helper import TestHelper
@@ -74,6 +74,6 @@ class RandomTest(TestHelper, unittest.TestCase):
 
         mean1, stdev1, median1 = experiment("artist")
         mean2, stdev2, median2 = experiment("track")
-        self.assertAlmostEqual(0, median1, delta=1)
-        self.assertAlmostEqual(len(self.items) // 2, median2, delta=1)
-        self.assertGreater(stdev2, stdev1)
+        assert 0 == pytest.approx(median1, abs=1)
+        assert len(self.items) // 2 == pytest.approx(median2, abs=1)
+        assert stdev2 > stdev1

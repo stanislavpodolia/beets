@@ -20,9 +20,6 @@ information or mock the environment.
 
 - `has_program` checks the presence of a command on the system.
 
-- The `generate_album_info` and `generate_track_info` functions return
-  fixtures to be used when mocking the autotagger.
-
 - The `ImportSessionFixture` allows one to run importer code while
   controlling the interactions through code.
 
@@ -42,7 +39,7 @@ from enum import Enum
 from functools import cached_property
 from io import StringIO
 from pathlib import Path
-from tempfile import mkdtemp, mkstemp
+from tempfile import gettempdir, mkdtemp, mkstemp
 from typing import Any, ClassVar
 from unittest.mock import patch
 
@@ -147,6 +144,20 @@ def has_program(cmd, args=["--version"]):
         return True
 
 
+def check_reflink_support(path: str) -> bool:
+    try:
+        import reflink
+    except ImportError:
+        return False
+
+    return reflink.supported_at(path)
+
+
+NEEDS_REFLINK = unittest.skipUnless(
+    check_reflink_support(gettempdir()), "no reflink support for libdir"
+)
+
+
 class TestHelper(_common.Assertions):
     """Helper mixin for high-level cli and plugin tests.
 
@@ -235,16 +246,15 @@ class TestHelper(_common.Assertions):
 
         The item is attached to the database from `self.lib`.
         """
-        item_count = self._get_item_count()
         values_ = {
             "title": "t\u00eftle {0}",
             "artist": "the \u00e4rtist",
             "album": "the \u00e4lbum",
-            "track": item_count,
+            "track": 1,
             "format": "MP3",
         }
         values_.update(values)
-        values_["title"] = values_["title"].format(item_count)
+        values_["title"] = values_["title"].format(1)
         values_["db"] = self.lib
         item = Item(**values_)
         if "path" not in values:
@@ -361,12 +371,6 @@ class TestHelper(_common.Assertions):
 
         return path
 
-    def _get_item_count(self):
-        if not hasattr(self, "__item_count"):
-            count = 0
-        self.__item_count = count + 1
-        return count
-
     # Running beets commands
 
     def run_command(self, *args, **kwargs):
@@ -452,13 +456,13 @@ class PluginMixin:
     plugin: ClassVar[str]
     preload_plugin: ClassVar[bool] = True
 
-    def setUp(self):
-        super().setUp()
+    def setup_beets(self):
+        super().setup_beets()
         if self.preload_plugin:
             self.load_plugins()
 
-    def tearDown(self):
-        super().tearDown()
+    def teardown_beets(self):
+        super().teardown_beets()
         self.unload_plugins()
 
     def load_plugins(self, *plugins: str) -> None:
@@ -499,12 +503,8 @@ class PluginMixin:
         Album._queries = getattr(Album, "_original_queries", {})
 
     @contextmanager
-    def configure_plugin(self, config: list[Any] | dict[str, Any]):
-        if isinstance(config, list):
-            beets.config[self.plugin] = config
-        else:
-            for key, value in config.items():
-                beets.config[self.plugin][key] = value
+    def configure_plugin(self, config: Any):
+        beets.config[self.plugin].set(config)
         self.load_plugins(self.plugin)
 
         yield
@@ -644,7 +644,7 @@ class ImportHelper(TestHelper):
         self.assertNotExists(os.path.join(self.libdir, *segments))
 
     def assert_lib_dir_empty(self):
-        self.assertEqual(len(os.listdir(syspath(self.libdir))), 0)
+        assert not os.listdir(syspath(self.libdir))
 
 
 class AsIsImporterMixin:
@@ -709,10 +709,6 @@ class ImportSessionFixture(ImportSession):
 
     default_resolution = "REMOVE"
 
-    def add_resolution(self, resolution):
-        assert isinstance(resolution, self.Resolution)
-        self._resolutions.append(resolution)
-
     def resolve_duplicate(self, task, found_duplicates):
         try:
             res = self._resolutions.pop(0)
@@ -765,12 +761,10 @@ class TerminalImportSessionFixture(TerminalImportSession):
             self.io.addinput("T")
         elif choice == importer.action.SKIP:
             self.io.addinput("S")
-        elif isinstance(choice, int):
+        else:
             self.io.addinput("M")
             self.io.addinput(str(choice))
             self._add_choice_input()
-        else:
-            raise Exception("Unknown choice %s" % choice)
 
 
 class TerminalImportMixin(ImportHelper):
@@ -787,82 +781,6 @@ class TerminalImportMixin(ImportHelper):
             io=self.io,
             paths=[import_dir],
         )
-
-
-def generate_album_info(album_id, track_values):
-    """Return `AlbumInfo` populated with mock data.
-
-    Sets the album info's `album_id` field is set to the corresponding
-    argument. For each pair (`id`, `values`) in `track_values` the `TrackInfo`
-    from `generate_track_info` is added to the album info's `tracks` field.
-    Most other fields of the album and track info are set to "album
-    info" and "track info", respectively.
-    """
-    tracks = [generate_track_info(id, values) for id, values in track_values]
-    album = AlbumInfo(
-        album_id="album info",
-        album="album info",
-        artist="album info",
-        artist_id="album info",
-        tracks=tracks,
-    )
-    for field in ALBUM_INFO_FIELDS:
-        setattr(album, field, "album info")
-
-    return album
-
-
-ALBUM_INFO_FIELDS = [
-    "album",
-    "album_id",
-    "artist",
-    "artist_id",
-    "asin",
-    "albumtype",
-    "va",
-    "label",
-    "barcode",
-    "artist_sort",
-    "releasegroup_id",
-    "catalognum",
-    "language",
-    "country",
-    "albumstatus",
-    "media",
-    "albumdisambig",
-    "releasegroupdisambig",
-    "artist_credit",
-    "data_source",
-    "data_url",
-]
-
-
-def generate_track_info(track_id="track info", values={}):
-    """Return `TrackInfo` populated with mock data.
-
-    The `track_id` field is set to the corresponding argument. All other
-    string fields are set to "track info".
-    """
-    track = TrackInfo(
-        title="track info",
-        track_id=track_id,
-    )
-    for field in TRACK_INFO_FIELDS:
-        setattr(track, field, "track info")
-    for field, value in values.items():
-        setattr(track, field, value)
-    return track
-
-
-TRACK_INFO_FIELDS = [
-    "artist",
-    "artist_id",
-    "artist_sort",
-    "disctitle",
-    "artist_credit",
-    "data_source",
-    "data_url",
-]
 
 
 class AutotagStub:
@@ -964,6 +882,7 @@ class AutotagStub:
             artist_id="artistid" + id,
             albumtype="soundtrack",
             data_source="match_source",
+            bandcamp_album_id="bc_url",
         )
 
 
@@ -977,7 +896,7 @@ class FetchImageHelper:
         super().run(*args, **kwargs)
 
     IMAGEHEADER = {
-        "image/jpeg": b"\x00" * 6 + b"JFIF",
+        "image/jpeg": b"\xff\xd8\xff" + b"\x00" * 3 + b"JFIF",
         "image/png": b"\211PNG\r\n\032\n",
     }
 

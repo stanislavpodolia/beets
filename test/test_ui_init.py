@@ -12,8 +12,7 @@
 # The above copyright notice and this permission notice shall be
 # included in all copies or substantial portions of the Software.
 
-"""Test module for file ui/__init__.py
-"""
+"""Test module for file ui/__init__.py"""
 
 import os
 import shutil
@@ -44,14 +43,14 @@ class InputMethodsTest(BeetsTestCase):
         items = ui.input_select_objects(
             "Prompt", full_items, self._print_helper
         )
-        self.assertEqual(items, [])
+        assert items == []
 
         # Test yes
         self.io.addinput("y")
         items = ui.input_select_objects(
             "Prompt", full_items, self._print_helper
         )
-        self.assertEqual(items, full_items)
+        assert items == full_items
 
         # Test selective 1
         self.io.addinput("s")
@@ -63,7 +62,7 @@ class InputMethodsTest(BeetsTestCase):
         items = ui.input_select_objects(
             "Prompt", full_items, self._print_helper
         )
-        self.assertEqual(items, ["2", "4"])
+        assert items == ["2", "4"]
 
         # Test selective 2
         self.io.addinput("s")
@@ -75,7 +74,7 @@ class InputMethodsTest(BeetsTestCase):
         items = ui.input_select_objects(
             "Prompt", full_items, lambda s: self._print_helper2(s, "Prefix")
         )
-        self.assertEqual(items, ["1", "2", "4"])
+        assert items == ["1", "2", "4"]
 
         # Test selective 3
         self.io.addinput("s")
@@ -86,7 +85,7 @@ class InputMethodsTest(BeetsTestCase):
         items = ui.input_select_objects(
             "Prompt", full_items, self._print_helper
         )
-        self.assertEqual(items, ["1", "3"])
+        assert items == ["1", "3"]
 
 
 class InitTest(ItemInDBTestCase):
@@ -106,7 +105,7 @@ class InitTest(ItemInDBTestCase):
             (pow(2, 100), "big"),
         ]
         for i, h in tests:
-            self.assertEqual(h, ui.human_bytes(i))
+            assert h == ui.human_bytes(i)
 
     def test_human_seconds(self):
         tests = [
@@ -122,7 +121,7 @@ class InitTest(ItemInDBTestCase):
             (314496000, "1.0 decades"),
         ]
         for i, h in tests:
-            self.assertEqual(h, ui.human_seconds(i))
+            assert h == ui.human_seconds(i)
 
 
 class ParentalDirCreation(BeetsTestCase):

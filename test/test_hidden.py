@@ -14,7 +14,6 @@
 
 """Tests for the 'hidden' utility."""
 
-
 import ctypes
 import errno
 import subprocess
@@ -45,7 +44,7 @@ class HiddenFileTest(unittest.TestCase):
                 else:
                     raise e
 
-            self.assertTrue(hidden.is_hidden(f.name))
+            assert hidden.is_hidden(f.name)
 
     def test_windows_hidden(self):
         if not sys.platform == "win32":
@@ -64,7 +63,7 @@ class HiddenFileTest(unittest.TestCase):
             if not success:
                 self.skipTest("unable to set file attributes")
 
-            self.assertTrue(hidden.is_hidden(f.name))
+            assert hidden.is_hidden(f.name)
 
     def test_other_hidden(self):
         if sys.platform == "darwin" or sys.platform == "win32":
@@ -73,4 +72,4 @@ class HiddenFileTest(unittest.TestCase):
 
         with tempfile.NamedTemporaryFile(prefix=".tmp") as f:
             fn = util.bytestring_path(f.name)
-            self.assertTrue(hidden.is_hidden(fn))
+            assert hidden.is_hidden(fn)

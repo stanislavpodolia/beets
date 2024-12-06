@@ -232,7 +232,7 @@ def _get_unique_table_field_values(model, field, sort_field):
         raise KeyError
     with g.lib.transaction() as tx:
         rows = tx.query(
-            'SELECT DISTINCT "{}" FROM "{}" ORDER BY "{}"'.format(
+            "SELECT DISTINCT '{}' FROM '{}' ORDER BY '{}'".format(
                 field, model._table, sort_field
             )
         )

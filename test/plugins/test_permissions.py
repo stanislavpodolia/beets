@@ -1,5 +1,4 @@
-"""Tests for the 'permissions' plugin.
-"""
+"""Tests for the 'permissions' plugin."""
 
 import os
 import platform
@@ -63,7 +62,7 @@ class PermissionsPluginTest(AsIsImporterMixin, PluginMixin, ImportTestCase):
         for path in dirs_in_library(self.lib.directory, item.path):
             self.assertPerms(path, "dir", expect_success)
 
-    def assertPerms(self, path, typ, expect_success):  # noqa
+    def assertPerms(self, path, typ, expect_success):
         for x in [
             (True, self.exp_perms[expect_success][typ], "!="),
             (False, self.exp_perms[not expect_success][typ], "=="),
@@ -74,13 +73,13 @@ class PermissionsPluginTest(AsIsImporterMixin, PluginMixin, ImportTestCase):
                 x[2],
                 oct(x[1]),
             )
-            self.assertEqual(x[0], check_permissions(path, x[1]), msg=msg)
+            assert x[0] == check_permissions(path, x[1]), msg
 
     def test_convert_perm_from_string(self):
-        self.assertEqual(convert_perm("10"), 8)
+        assert convert_perm("10") == 8
 
     def test_convert_perm_from_int(self):
-        self.assertEqual(convert_perm(10), 8)
+        assert convert_perm(10) == 8
 
     def test_permissions_on_set_art(self):
         self.do_set_art(True)
@@ -97,6 +96,4 @@ class PermissionsPluginTest(AsIsImporterMixin, PluginMixin, ImportTestCase):
         artpath = os.path.join(self.temp_dir, b"cover.jpg")
         touch(artpath)
         album.set_art(artpath)
-        self.assertEqual(
-            expect_success, check_permissions(album.artpath, 0o777)
-        )
+        assert expect_success == check_permissions(album.artpath, 0o777)
