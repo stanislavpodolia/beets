@@ -75,37 +75,40 @@ def album_imported(album):
             t.join()
 
 def item_removed(item):
-    lib = _open_library(config)
-    if isinstance(item, Item):
-        album_id = item.album_id
-        album = lib.get_album(album_id)
-        dst_dir = os.path.join(
-            rootDir,
-            sanitize(album.label),
-            sanitize('[{0}] {1} - {2}'.format(album.catalognum, album.albumartist, album.album))
-        )
+    try:
+        lib = _open_library(config)
+        if isinstance(item, Item):
+            album_id = item.album_id
+            album = lib.get_album(album_id)
+            dst_dir = os.path.join(
+                rootDir,
+                sanitize(album.label),
+                sanitize('[{0}] {1} - {2}'.format(album.catalognum, album.albumartist, album.album))
+            )
 
-        t = remove_symlink_item_thread(dst_dir, item)
-        t.start()
-        t.join()
-    elif isinstance(item, Album):
-        album_id = item.id
-        album = lib.get_album(album_id)
-        dst_dir = os.path.join(
-            rootDir,
-            sanitize(album.label),
-            sanitize('[{0}] {1} - {2}'.format(album.catalognum, album.albumartist, album.album))
-        )
-
-        threads = []
-
-        for item in album.items():
             t = remove_symlink_item_thread(dst_dir, item)
             t.start()
-            threads.append(t)
-
-        for t in threads:
             t.join()
+        elif isinstance(item, Album):
+            album_id = item.id
+            album = lib.get_album(album_id)
+            dst_dir = os.path.join(
+                rootDir,
+                sanitize(album.label),
+                sanitize('[{0}] {1} - {2}'.format(album.catalognum, album.albumartist, album.album))
+            )
+
+            threads = []
+
+            for item in album.items():
+                t = remove_symlink_item_thread(dst_dir, item)
+                t.start()
+                threads.append(t)
+
+            for t in threads:
+                t.join()
+    except:
+        return
 
 class album_imported_thread(threading.Thread):
     def __init__(self, album):
@@ -162,7 +165,7 @@ class MySymlinkPlugin(BeetsPlugin):
     def __init__(self):
         super(MySymlinkPlugin, self).__init__()
         self.register_listener('album_imported', self.album_imported)
-        self.register_listener('item_removed', self.item_removed)
+        # self.register_listener('item_removed', self.item_removed)
 
     def commands(self):
         return [SymlinkLibraryCommand()]
