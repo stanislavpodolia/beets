@@ -210,6 +210,7 @@ match:
         medium: 1.0
     preferred:
         countries: []
+        labels: []
         media: []
         original_year: no
     ignored: []
