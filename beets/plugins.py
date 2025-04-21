@@ -568,7 +568,7 @@ def album_for_id(_id: str) -> AlbumInfo | None:
     for t in threads:
         t.join()
 
-    return result
+    return result[0] if result else None
 
 class track_for_id_thread(threading.Thread):
     def __init__(self, result, plugin, _id):
@@ -598,7 +598,7 @@ def track_for_id(_id: str) -> TrackInfo | None:
     for t in threads:
         t.join()
 
-    return result
+    return result[0] if result else None
 
 
 def template_funcs() -> TFuncMap[str]:
