@@ -525,7 +525,7 @@ def tag_album(
     # Use existing metadata or text search.
     else:
         # Try search based on current ID.
-        id_info = match_by_id(items)
+        id_info = match_by_id(items) if config["musicbrainz"]["enabled"] else None
         if id_info:
             _add_candidate(items, candidates, id_info)
             rec = _recommendation(list(candidates.values()))
