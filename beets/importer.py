@@ -1830,7 +1830,7 @@ def group_albums(session: ImportSession):
         task = pipeline.multiple(tasks)
 
 
-MULTIDISC_MARKERS = (rb"dis[ck]", rb"cd")
+MULTIDISC_MARKERS = ()#(rb"dis[ck]", rb"cd")
 MULTIDISC_PAT_FMT = rb"^(.*%s[\W_]*)\d"
 
 
