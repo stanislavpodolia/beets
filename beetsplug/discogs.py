@@ -360,7 +360,14 @@ class DiscogsPlugin(BeetsPlugin):
         # Explicitly reload the `Release` fields, as they might not be yet
         # present if the result is from a `discogs_client.search()`.
         if not result.data.get("artists"):
-            result.refresh()
+            try:
+                result.refresh()
+            except DiscogsAPIError as e:
+                self._log.debug(
+                    "API Error: {0} (query: {1})",
+                    e,
+                    result.data["resource_url"],
+                )
 
         # Sanity check for required fields. The list of required fields is
         # defined at Guideline 1.3.1.a, but in practice some releases might be
